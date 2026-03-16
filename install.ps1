@@ -4,7 +4,7 @@
 $ErrorActionPreference = "Stop"
 
 $REPO    = "yohamza/tq"          # ← change to your GitHub user/repo
-$EXE_URL = "https://github.com/$REPO/releases/latest/download/tq.exe"
+$EXE_URL = "https://github.com/$REPO/releases/latest/download/tq-windows.exe"
 $INSTALL_DIR = "$env:LOCALAPPDATA\tq"
 $EXE_PATH    = "$INSTALL_DIR\tq.exe"
 
