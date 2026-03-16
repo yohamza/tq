@@ -63,22 +63,24 @@ success "Downloaded tq → $TQ"
 PATH_ADDED=false
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
   warn "~/.local/bin is not in your PATH — fixing..."
-  # Find the user's shell rc file
-  SHELL_NAME="$(basename "$SHELL")"
+  PATH_LINE="export PATH=\"$HOME/.local/bin:\$PATH\""
+  # Add to all relevant rc files for the user's shell
+  SHELL_NAME="$(basename "${SHELL:-/bin/bash}")"
+  RC_FILES=()
   case "$SHELL_NAME" in
-    zsh)  RC_FILE="$HOME/.zshrc" ;;
-    bash) RC_FILE="$HOME/.bashrc" ;;
-    *)    RC_FILE="$HOME/.profile" ;;
+    zsh)  RC_FILES=("$HOME/.zshrc" "$HOME/.zprofile") ;;
+    bash) RC_FILES=("$HOME/.bashrc" "$HOME/.bash_profile") ;;
+    *)    RC_FILES=("$HOME/.profile") ;;
   esac
-  # Create the rc file if it doesn't exist
-  touch "$RC_FILE"
-  # Only add if not already present
-  if ! grep -qF '.local/bin' "$RC_FILE" 2>/dev/null; then
-    echo '' >> "$RC_FILE"
-    echo '# tq — added by tq installer' >> "$RC_FILE"
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC_FILE"
-  fi
-  success "Added ~/.local/bin to PATH in $RC_FILE"
+  for RC_FILE in "${RC_FILES[@]}"; do
+    touch "$RC_FILE"
+    if ! grep -qF '.local/bin' "$RC_FILE" 2>/dev/null; then
+      echo '' >> "$RC_FILE"
+      echo '# tq — added by tq installer' >> "$RC_FILE"
+      echo "$PATH_LINE" >> "$RC_FILE"
+      success "Added ~/.local/bin to PATH in $RC_FILE"
+    fi
+  done
   PATH_ADDED=true
   export PATH="$HOME/.local/bin:$PATH"
 else
