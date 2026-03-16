@@ -1,0 +1,138 @@
+# Automatically builds tq.exe (Windows), tq (macOS), tq (Linux)
+# and attaches them to every GitHub Release as downloadable assets.
+#
+# Trigger: push a version tag  →  git tag v1.0.0 && git push --tags
+
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"           # fires on v1.0.0, v1.2.3, etc.
+
+jobs:
+
+  # ── Windows → tq.exe ────────────────────────────────────────────────────────
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps + PyInstaller
+        run: pip install typer rich textual pyinstaller
+
+      - name: Build tq.exe
+        run: |
+          pyinstaller `
+            --onefile `
+            --name tq `
+            --console `
+            --icon NONE `
+            tq.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tq-windows
+          path: dist/tq.exe
+
+  # ── macOS → tq ──────────────────────────────────────────────────────────────
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps + PyInstaller
+        run: pip install typer rich textual pyinstaller
+
+      - name: Build tq (macOS)
+        run: |
+          pyinstaller \
+            --onefile \
+            --name tq \
+            --console \
+            tq.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tq-macos
+          path: dist/tq
+
+  # ── Linux → tq ──────────────────────────────────────────────────────────────
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps + PyInstaller
+        run: pip install typer rich textual pyinstaller
+
+      - name: Build tq (Linux)
+        run: |
+          pyinstaller \
+            --onefile \
+            --name tq \
+            --console \
+            tq.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tq-linux
+          path: dist/tq
+
+  # ── Create GitHub Release with all 3 binaries ────────────────────────────────
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Rename binaries
+        run: |
+          mv tq-windows/tq.exe   tq-windows.exe
+          mv tq-macos/tq         tq-macos
+          mv tq-linux/tq         tq-linux
+          chmod +x tq-macos tq-linux
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "tq ${{ github.ref_name }}"
+          body: |
+            ## 📚 tq ${{ github.ref_name }}
+
+            ### Install
+
+            **Windows** (PowerShell):
+            ```powershell
+            powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/${{ github.repository }}/main/install.ps1 | iex"
+            ```
+
+            **macOS / Linux**:
+            ```bash
+            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
+            ```
+
+            ### Manual download
+            Pick the binary for your platform below ↓
+          files: |
+            tq-windows.exe
+            tq-macos
+            tq-linux
