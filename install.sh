@@ -6,9 +6,7 @@ set -e
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-REPO="yohamza/tq"                    # ← change this to your GitHub user/repo
-BRANCH="main"
-RAW="https://raw.githubusercontent.com/$REPO/$BRANCH"
+REPO="yohamza/tq"
 INSTALL_DIR="$HOME/.local/bin"
 TQ="$INSTALL_DIR/tq"
 
@@ -34,81 +32,31 @@ echo ""
 
 OS="$(uname -s)"
 case "$OS" in
-  Linux*)  PLATFORM="Linux"  ;;
-  Darwin*) PLATFORM="macOS"  ;;
+  Linux*)  PLATFORM="linux";  ASSET="tq-binary-linux" ;;
+  Darwin*) PLATFORM="macos";  ASSET="tq-binary-macos" ;;
   *)       error "Unsupported OS: $OS. Please install manually." ;;
 esac
 info "Platform: $PLATFORM"
 
-# ── Check Python 3 ───────────────────────────────────────────────────────────
+# ── Download binary ──────────────────────────────────────────────────────────
 
-header "Checking requirements..."
+DOWNLOAD_URL="https://github.com/$REPO/releases/latest/download/$ASSET"
 
-PYTHON=""
-for cmd in python3 python; do
-  if command -v "$cmd" &>/dev/null; then
-    ver=$("$cmd" -c "import sys; print(sys.version_info.major)")
-    if [ "$ver" = "3" ]; then
-      PYTHON="$cmd"
-      break
-    fi
-  fi
-done
-
-[ -z "$PYTHON" ] && error "Python 3 not found. Install it from https://python.org and re-run."
-PY_VER=$($PYTHON --version 2>&1)
-success "Found $PY_VER"
-
-# ── Check / Install pip ───────────────────────────────────────────────────────
-
-PIP=""
-for cmd in pip3 pip; do
-  if command -v "$cmd" &>/dev/null; then
-    PIP="$cmd"
-    break
-  fi
-done
-
-if [ -z "$PIP" ]; then
-  info "pip not found — installing via ensurepip..."
-  $PYTHON -m ensurepip --upgrade &>/dev/null || error "Could not install pip. Install it manually and re-run."
-  PIP="$PYTHON -m pip"
-fi
-success "pip ready"
-
-# ── Create venv & install dependencies ────────────────────────────────────────
-
-VENV_DIR="$HOME/.local/share/tq/venv"
-
-header "Setting up virtual environment..."
-
-$PYTHON -m venv "$VENV_DIR" || error "Failed to create venv. Make sure python3-venv is installed (apt install python3-venv)."
-success "venv created at $VENV_DIR"
-
-header "Installing dependencies..."
-
-"$VENV_DIR/bin/pip" install --quiet --upgrade typer rich textual
-success "typer + rich + textual installed"
-
-# ── Download tq.py ────────────────────────────────────────────────────────────
-
-header "Installing tq..."
+header "Downloading tq..."
 
 mkdir -p "$INSTALL_DIR"
+info "Fetching latest release from GitHub..."
 
 if command -v curl &>/dev/null; then
-  curl -sSL "$RAW/tq.py" -o "$TQ"
+  curl -fsSL "$DOWNLOAD_URL" -o "$TQ" || error "Download failed.\n  Check your internet connection or visit https://github.com/$REPO/releases"
 elif command -v wget &>/dev/null; then
-  wget -qO "$TQ" "$RAW/tq.py"
+  wget -qO "$TQ" "$DOWNLOAD_URL" || error "Download failed.\n  Check your internet connection or visit https://github.com/$REPO/releases"
 else
   error "Neither curl nor wget found. Install one and re-run."
 fi
 
-# Inject the venv python into the shebang so deps are available
-sed -i.bak "1s|.*|#!$VENV_DIR/bin/python|" "$TQ" && rm -f "$TQ.bak"
-
 chmod +x "$TQ"
-success "tq installed to $TQ"
+success "Downloaded tq → $TQ"
 
 # ── PATH setup ────────────────────────────────────────────────────────────────
 
@@ -136,7 +84,7 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
       break
     fi
   done
-  export PATH="$HOME/.local/bin:$PATH"   # active for this session immediately
+  export PATH="$HOME/.local/bin:$PATH"
 else
   success "~/.local/bin already in PATH"
 fi
