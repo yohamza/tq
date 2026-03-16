@@ -28,19 +28,19 @@
 
 **macOS / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USER/tq/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/yohamza/tq/main/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/YOUR_USER/tq/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/yohamza/tq/main/install.ps1 | iex
 ```
 
 ### Manual install
 
 ```bash
 pip install typer rich textual
-git clone https://github.com/YOUR_USER/tq.git
+git clone https://github.com/yohamza/tq.git
 cd tq
 python tq.py
 ```
@@ -170,7 +170,7 @@ tq/
 
 ```bash
 # Clone
-git clone https://github.com/YOUR_USER/tq.git
+git clone https://github.com/yohamza/tq.git
 cd tq
 
 # Install dependencies
