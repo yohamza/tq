@@ -76,11 +76,18 @@ if [ -z "$PIP" ]; then
 fi
 success "pip ready"
 
-# ── Install Python dependencies ───────────────────────────────────────────────
+# ── Create venv & install dependencies ────────────────────────────────────────
+
+VENV_DIR="$HOME/.local/share/tq/venv"
+
+header "Setting up virtual environment..."
+
+$PYTHON -m venv "$VENV_DIR" || error "Failed to create venv. Make sure python3-venv is installed (apt install python3-venv)."
+success "venv created at $VENV_DIR"
 
 header "Installing dependencies..."
 
-$PIP install --quiet --upgrade typer rich textual
+"$VENV_DIR/bin/pip" install --quiet --upgrade typer rich textual
 success "typer + rich + textual installed"
 
 # ── Download tq.py ────────────────────────────────────────────────────────────
@@ -97,8 +104,8 @@ else
   error "Neither curl nor wget found. Install one and re-run."
 fi
 
-# Inject the correct python into the shebang so it works everywhere
-sed -i.bak "1s|.*|#!$($PYTHON -c 'import sys; print(sys.executable)')|" "$TQ" && rm -f "$TQ.bak"
+# Inject the venv python into the shebang so deps are available
+sed -i.bak "1s|.*|#!$VENV_DIR/bin/python|" "$TQ" && rm -f "$TQ.bak"
 
 chmod +x "$TQ"
 success "tq installed to $TQ"
