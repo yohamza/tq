@@ -106,10 +106,10 @@ jobs:
 
       - name: Rename binaries
         run: |
-          mv tq-windows/tq.exe   tq-windows.exe
-          mv tq-macos/tq         tq-macos
-          mv tq-linux/tq         tq-linux
-          chmod +x tq-macos tq-linux
+          cp tq-windows/tq.exe   tq-windows.exe
+          cp tq-macos/tq         tq-binary-macos
+          cp tq-linux/tq         tq-binary-linux
+          chmod +x tq-binary-macos tq-binary-linux
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -134,5 +134,5 @@ jobs:
             Pick the binary for your platform below ↓
           files: |
             tq-windows.exe
-            tq-macos
-            tq-linux
+            tq-binary-macos
+            tq-binary-linux

@@ -308,12 +308,14 @@ def _launch_tui() -> None:
     try:
         from textual.app import App, ComposeResult
         from textual.binding import Binding
-        from textual.containers import Container, Horizontal, ScrollableContainer
+        from textual.containers import Container, Horizontal
         from textual.screen import ModalScreen
         from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Static
     except ImportError:
         rprint("[red]Textual not installed.[/red] Run: [bold]pip install textual[/bold]")
         sys.exit(1)
+
+    from rich.text import Text
 
     # ── Add Tutorial Modal ────────────────────────────────────────────────────
 
@@ -322,30 +324,30 @@ def _launch_tui() -> None:
         DEFAULT_CSS = """
         AddModal { align: center middle; }
         #modal-box {
-            background: $surface; border: solid $primary;
-            padding: 2 3; width: 62; height: auto;
+            background: $surface; border: tall $primary;
+            padding: 1 2; width: 58; height: auto;
         }
-        #modal-title { text-style: bold; color: $accent; margin-bottom: 1; }
+        #modal-title { text-style: bold; margin-bottom: 1; }
         .field-label { color: $text-muted; margin-top: 1; }
-        #modal-btns { margin-top: 2; }
-        #modal-btns Button { margin-right: 1; }
+        #modal-btns { margin-top: 1; height: 3; }
+        #modal-btns Button { min-width: 12; margin-right: 1; height: 3; }
         """
         def compose(self) -> ComposeResult:
             with Container(id="modal-box"):
-                yield Label("➕  Add Tutorial", id="modal-title")
+                yield Label("Add Tutorial", id="modal-title")
                 yield Label("Title *",                               classes="field-label")
                 yield Input(placeholder="React Hooks Deep Dive",    id="i-title")
                 yield Label("URL",                                   classes="field-label")
                 yield Input(placeholder="https://youtube.com/...",  id="i-url")
                 yield Label("Topic",                                 classes="field-label")
-                yield Input(placeholder="React / Python / CSS…",    id="i-topic", value="Other")
+                yield Input(placeholder="React / Python / CSS",     id="i-topic", value="Other")
                 yield Label("Duration (minutes)",                    classes="field-label")
                 yield Input(placeholder="45",                        id="i-dur")
-                yield Label("Schedule  (today / tomorrow / YYYY-MM-DD)", classes="field-label")
+                yield Label("Schedule (today / tomorrow / YYYY-MM-DD)", classes="field-label")
                 yield Input(placeholder="today",                     id="i-sched")
                 with Horizontal(id="modal-btns"):
-                    yield Button("➕ Add",  variant="primary", id="btn-ok")
-                    yield Button("Cancel",                     id="btn-cancel")
+                    yield Button("Save",   variant="primary", id="btn-ok")
+                    yield Button("Cancel", variant="default", id="btn-cancel")
 
         def on_button_pressed(self, e: Button.Pressed) -> None:
             if e.button.id == "btn-cancel":
@@ -374,12 +376,12 @@ def _launch_tui() -> None:
         DEFAULT_CSS = """
         ProgModal { align: center middle; }
         #pm-box {
-            background: $surface; border: solid $primary;
-            padding: 2 3; width: 46; height: auto;
+            background: $surface; border: tall $primary;
+            padding: 1 2; width: 46; height: auto;
         }
-        #pm-title { text-style: bold; color: $accent; margin-bottom: 1; }
+        #pm-title { text-style: bold; margin-bottom: 1; }
         #pm-btns  { margin-top: 1; }
-        #pm-btns Button { margin-right: 1; }
+        #pm-btns Button { min-width: 12; margin-right: 1; }
         """
         def __init__(self, tutorial_title: str):
             super().__init__()
@@ -387,11 +389,11 @@ def _launch_tui() -> None:
 
         def compose(self) -> ComposeResult:
             with Container(id="pm-box"):
-                yield Label(f"Set progress %\n[bold]{self._tut_title[:40]}[/bold]", id="pm-title")
-                yield Input(placeholder="0 – 100", id="pm-inp")
+                yield Label(f"Set progress for: {self._tut_title[:36]}", id="pm-title")
+                yield Input(placeholder="0 - 100", id="pm-inp")
                 with Horizontal(id="pm-btns"):
-                    yield Button("Set", variant="primary", id="pm-ok")
-                    yield Button("Cancel",                 id="pm-cancel")
+                    yield Button("Save",   variant="primary", id="pm-ok")
+                    yield Button("Cancel", variant="default", id="pm-cancel")
 
         def on_button_pressed(self, e: Button.Pressed) -> None:
             if e.button.id == "pm-cancel":
@@ -403,43 +405,34 @@ def _launch_tui() -> None:
     # ── Main TUI App ──────────────────────────────────────────────────────────
 
     class TQApp(App):
+        TITLE = "tq - Tutorial Queue"
         CSS = """
         Screen { background: $background; }
-
         #stats-bar {
-            height: 3;
-            background: $surface-darken-1;
-            border-bottom: solid $primary-darken-2;
-            padding: 0 2;
-            content-align: left middle;
-        }
-        #layout { height: 1fr; }
-
-        #sidebar {
-            width: 38;
-            border-right: solid $primary-darken-2;
+            height: 1;
             background: $surface;
-        }
-        #sidebar-header {
-            height: 3;
-            background: $primary-darken-2;
-            padding: 0 1;
-            content-align: left middle;
-            text-style: bold;
-            color: $text;
+            padding: 0 2;
+            color: $text-muted;
         }
         DataTable { height: 1fr; }
-
-        #detail {
-            padding: 1 2;
-            width: 1fr;
+        #empty-state {
+            width: 1fr; height: 1fr;
+            align: center middle;
         }
+        #empty-state Static {
+            content-align: center middle;
+            width: auto;
+            margin-bottom: 1;
+        }
+        #empty-state Button { min-width: 20; }
         """
         BINDINGS = [
             Binding("a", "add",       "Add",          show=True),
+            Binding("o", "open_url",  "Open URL",     show=True),
             Binding("p", "pick",      "Pick for Me",  show=True),
             Binding("d", "mark_done", "Done",         show=True),
             Binding("e", "set_prog",  "Set Progress", show=True),
+            Binding("x", "delete",    "Delete",       show=True),
             Binding("q", "quit",      "Quit",         show=True),
         ]
 
@@ -466,26 +459,26 @@ def _launch_tui() -> None:
         def compose(self) -> ComposeResult:
             yield Header(show_clock=True)
             yield Static("", id="stats-bar")
-            with Horizontal(id="layout"):
-                with Container(id="sidebar"):
-                    yield Static("  📚  Tutorial Queue", id="sidebar-header")
-                    yield DataTable(id="tbl", show_header=False, cursor_type="row")
-                with ScrollableContainer(id="detail"):
-                    yield Static("", id="detail-pane")
+            with Container(id="empty-state"):
+                yield Static("No tutorials yet")
+                yield Button("Add Tutorial", variant="primary", id="btn-empty-add")
+            yield DataTable(id="tbl", cursor_type="row")
             yield Footer()
 
         def on_mount(self) -> None:
             tbl = self.query_one("#tbl", DataTable)
-            tbl.add_columns("icon", "title", "meta")
+            tbl.add_columns(" ", "Title", "Topic", "Duration", "Progress", "URL")
             self._refresh()
 
         # ── Render ────────────────────────────────────────────────────────────
 
         def _refresh(self) -> None:
             self._data = load_data()
+            has_tuts = len(self._data["tutorials"]) > 0
+            self.query_one("#empty-state").display = not has_tuts
+            self.query_one("#tbl").display = has_tuts
             self._render_stats()
             self._render_table()
-            self._render_detail()
 
         def _render_stats(self) -> None:
             st         = self._data["settings"].get("streak", {})
@@ -495,12 +488,11 @@ def _launch_tui() -> None:
                 if t.get("completed_date") == today_str()
             )
             pct = min(100, int(done_today / goal * 100)) if goal else 0
-            bar = "█" * (pct // 5) + "░" * (20 - pct // 5)
             q   = sum(1 for t in self._data["tutorials"] if t["status"] != "done")
             self.query_one("#stats-bar", Static).update(
-                f"🔥 Streak: [bold]{st.get('count', 0)}d[/bold]   "
-                f"⚡ Goal: [cyan]{bar}[/cyan] {pct}%  ({fmt_mins(done_today)} / {fmt_mins(goal)})   "
-                f"📚 Queue: [bold]{q}[/bold]"
+                f"Streak: {st.get('count', 0)}d  |  "
+                f"Goal: {fmt_mins(done_today)}/{fmt_mins(goal)} ({pct}%)  |  "
+                f"Queue: {q}"
             )
 
         def _render_table(self) -> None:
@@ -508,41 +500,28 @@ def _launch_tui() -> None:
             tbl.clear()
             for t in self._ordered():
                 icon  = STATUS_ICONS[t["status"]]
-                color = STATUS_COLORS[t["status"]]
-                title = t["title"][:26]
-                meta  = f"{t['topic']} · {fmt_mins(t.get('duration_mins', 0))} · {t.get('progress', 0)}%"
-                tbl.add_row(icon, f"[{color}]{title}[/{color}]", f"[dim]{meta}[/dim]")
-
-        def _render_detail(self) -> None:
-            t    = self._selected()
-            pane = self.query_one("#detail-pane", Static)
-            if not t:
-                pane.update("[dim]No tutorials yet.\nPress [bold]A[/bold] to add one![/dim]")
-                return
-            pct    = t.get("progress", 0)
-            f      = int(20 * pct / 100)
-            bar    = "[green]" + "█" * f + "[/green][dim]" + "░" * (20 - f) + f"[/dim] {pct}%"
-            url    = f"\n  🔗 [link={t['url']}]{t['url']}[/link]" if t.get("url") else ""
-            sched  = t.get("scheduled") or "—"
-            pane.update(
-                f"[bold cyan]{t['title']}[/bold cyan]\n\n"
-                f"  [dim]Topic    [/dim] {t['topic']}\n"
-                f"  [dim]Duration [/dim] {fmt_mins(t.get('duration_mins', 0))}\n"
-                f"  [dim]Status   [/dim] {STATUS_ICONS[t['status']]} {STATUS_LABELS[t['status']]}\n"
-                f"  [dim]Scheduled[/dim] {sched}\n"
-                f"  [dim]Added    [/dim] {t['added']}"
-                f"{url}\n\n"
-                f"  [dim]Progress[/dim]\n"
-                f"  {bar}\n\n"
-                f"  [dim]──────────────────────────────────[/dim]\n"
-                f"  [bold]A[/bold] Add new   [bold]D[/bold] Mark done   [bold]P[/bold] Pick for me\n"
-                f"  [bold]E[/bold] Set progress %   [bold]Q[/bold] Quit"
-            )
+                title = t["title"][:40]
+                topic = t.get("topic", "")
+                dur   = fmt_mins(t.get("duration_mins", 0))
+                pct   = t.get("progress", 0)
+                bar   = "█" * (pct // 10) + "░" * (10 - pct // 10) + f" {pct}%"
+                url = Text(t.get("url", "") or "")
+                tbl.add_row(icon, title, topic, dur, bar, url)
 
         # ── Events ────────────────────────────────────────────────────────────
 
-        def on_data_table_row_highlighted(self, _) -> None:
-            self._render_detail()
+        def on_data_table_row_selected(self, e: DataTable.RowSelected) -> None:
+            t = self._selected()
+            if t and t.get("url"):
+                import webbrowser
+                webbrowser.open(t["url"])
+                self.notify("Opened in browser", title=t["url"])
+            else:
+                self.notify("No URL for this tutorial", title="Open URL")
+
+        def on_button_pressed(self, e: Button.Pressed) -> None:
+            if e.button.id == "btn-empty-add":
+                self.action_add()
 
         # ── Actions ───────────────────────────────────────────────────────────
 
@@ -561,25 +540,33 @@ def _launch_tui() -> None:
                 self._data["tutorials"].append(result)
                 save_data(self._data)
                 self._refresh()
-                self.notify(f"Added: {result['title']}", title="✓ Tutorial Added")
+                self.notify(f"Added: {result['title']}", title="Tutorial Added")
             self.push_screen(AddModal(), on_result)
 
         def action_pick(self) -> None:
             t = smart_pick(self._data["tutorials"])
             if not t:
-                self.notify("All done — queue is empty!", title="🎉")
+                self.notify("All done - queue is empty!", title="Pick")
                 return
             ordered = self._ordered()
             try:
                 idx = next(i for i, x in enumerate(ordered) if x["id"] == t["id"])
                 self.query_one("#tbl", DataTable).move_cursor(row=idx)
-                self._render_detail()
             except StopIteration:
                 pass
             self.notify(
-                f"{t['title']}\n{fmt_mins(t.get('duration_mins', 0))} · {t['topic']}",
-                title="🎯 Pick for Me",
+                f"{t['title']}  ({fmt_mins(t.get('duration_mins', 0))} - {t['topic']})",
+                title="Pick for Me",
             )
+
+        def action_open_url(self) -> None:
+            import webbrowser
+            t = self._selected()
+            if not t or not t.get("url"):
+                self.notify("No URL for this tutorial", title="Open URL")
+                return
+            webbrowser.open(t["url"])
+            self.notify(t["url"], title="Opened in browser")
 
         def action_mark_done(self) -> None:
             t = self._selected()
@@ -591,8 +578,19 @@ def _launch_tui() -> None:
                     update_streak(self._data)
                     save_data(self._data)
                     self._refresh()
-                    self.notify(t["title"], title="✅ Marked Done!")
+                    self.notify(t["title"], title="Marked Done!")
                     return
+
+        def action_delete(self) -> None:
+            t = self._selected()
+            if not t:
+                return
+            self._data["tutorials"] = [
+                x for x in self._data["tutorials"] if x["id"] != t["id"]
+            ]
+            save_data(self._data)
+            self._refresh()
+            self.notify(t["title"], title="Deleted")
 
         def action_set_prog(self) -> None:
             t = self._selected()
@@ -610,7 +608,7 @@ def _launch_tui() -> None:
                         else:          x["status"] = "todo"
                         save_data(self._data)
                         self._refresh()
-                        self.notify(f"{pct}%", title="📊 Progress Updated")
+                        self.notify(f"{pct}%", title="Progress Updated")
                         return
             self.push_screen(ProgModal(t["title"]), on_result)
 
