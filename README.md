@@ -31,10 +31,14 @@
 curl -fsSL https://raw.githubusercontent.com/yohamza/tq/main/install.sh | bash
 ```
 
+> After install, restart your terminal or run `source ~/.zshrc` (or `source ~/.bashrc`) for the `tq` command to be available.
+
 **Windows (PowerShell):**
 ```powershell
 irm https://raw.githubusercontent.com/yohamza/tq/main/install.ps1 | iex
 ```
+
+> After install, open a new terminal window for the `tq` command to be available.
 
 ### Manual install
 

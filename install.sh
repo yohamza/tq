@@ -60,30 +60,26 @@ success "Downloaded tq → $TQ"
 
 # ── PATH setup ────────────────────────────────────────────────────────────────
 
-add_to_path() {
-  local rc="$1"
-  if [ -f "$rc" ]; then
-    if ! grep -q 'tq.*PATH\|PATH.*\.local/bin' "$rc" 2>/dev/null && \
-       ! grep -q '$HOME/.local/bin' "$rc" 2>/dev/null; then
-      echo "" >> "$rc"
-      echo '# tq — added by tq installer' >> "$rc"
-      echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
-      success "Added ~/.local/bin to PATH in $rc"
-      return 0
-    fi
-  fi
-  return 1
-}
-
 PATH_ADDED=false
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
   warn "~/.local/bin is not in your PATH — fixing..."
-  for rc in "$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile"; do
-    if add_to_path "$rc"; then
-      PATH_ADDED=true
-      break
-    fi
-  done
+  # Find the user's shell rc file
+  SHELL_NAME="$(basename "$SHELL")"
+  case "$SHELL_NAME" in
+    zsh)  RC_FILE="$HOME/.zshrc" ;;
+    bash) RC_FILE="$HOME/.bashrc" ;;
+    *)    RC_FILE="$HOME/.profile" ;;
+  esac
+  # Create the rc file if it doesn't exist
+  touch "$RC_FILE"
+  # Only add if not already present
+  if ! grep -qF '.local/bin' "$RC_FILE" 2>/dev/null; then
+    echo '' >> "$RC_FILE"
+    echo '# tq — added by tq installer' >> "$RC_FILE"
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC_FILE"
+  fi
+  success "Added ~/.local/bin to PATH in $RC_FILE"
+  PATH_ADDED=true
   export PATH="$HOME/.local/bin:$PATH"
 else
   success "~/.local/bin already in PATH"
@@ -110,8 +106,7 @@ echo -e "  ${BOLD}tq pick${RESET}               → Smart-pick what to watch"
 echo -e "  ${BOLD}tq --help${RESET}             → All commands"
 echo ""
 
-if [ "$PATH_ADDED" = true ]; then
-  echo -e "  ${YELLOW}⚠  Restart your terminal (or run: source ~/.zshrc)${RESET}"
-  echo -e "  ${YELLOW}   to activate the \$PATH change.${RESET}"
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]] || [ "$PATH_ADDED" = true ]; then
+  echo -e "  ${YELLOW}⚠  Restart your terminal or run:  source ~/.zshrc${RESET}"
   echo ""
 fi
